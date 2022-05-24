@@ -1,0 +1,77 @@
+{
+  "name": "@antbuddy-jsc/browser",
+  "version": "0.0.1",
+  "description": "AntBuddy Chat browser library",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antbuddy-jsc/browser.git"
+  },
+  "author": "vinh.thieu@antbuddy.com",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel watch src/global.ts --out-file dist/global.js",
+    "tsc": "tsc",
+    "build:global": "parcel build src/global.ts --out-file dist/global.js --no-source-maps",
+    "build:types": "tsc --declaration true --emitDeclarationOnly true --declarationDir dist",
+    "build": "rollup -c",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build && npm run build:global && npm run build:types"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "jsnext:main": "dist/index.es.js",
+  "unpkg": "dist/index.js",
+  "engines": {
+    "node": "v12.22.7",
+    "npm": "6.14.15"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "devDependencies": {
+    "@babel/core": "7.0.0",
+    "@babel/preset-env": "7.0.0",
+    "@rollup/plugin-commonjs": "15.1.0",
+    "@rollup/plugin-node-resolve": "8.1.0",
+    "@rollup/plugin-typescript": "6.0.0",
+    "@types/phoenix": "1.5.4",
+    "@types/axios": "0.14.0",
+    "@typescript-eslint/eslint-plugin": "3.5.0",
+    "@typescript-eslint/parser": "3.5.0",
+    "babel-eslint": "10.1.0",
+    "babel-jest": "26.1.0",
+    "eslint": "7.3.1",
+    "eslint-plugin-prettier": "3.1.4",
+    "husky": "4.2.5",
+    "jest": "26.1.0",
+    "jsdom": "16.2.2",
+    "jsdom-global": "3.0.2",
+    "lint-staged": "10.2.11",
+    "localStorage": "1.0.4",
+    "parcel": "1.12.3",
+    "prettier": "2.0.5",
+    "rollup": "2.18.2",
+    "sinon": "9.0.2",
+    "typescript": "4.6.4"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,js,json}": "prettier --write",
+    "*.ts": [
+      "eslint -c .eslintrc.ts.js --fix",
+      "tsc"
+    ]
+  },
+  "bugs": {
+    "url": "https://github.com/antbuddy-jsc/storytime/issues"
+  },
+  "homepage": "https://github.com/antbuddy-jsc/storytime#readme",
+  "dependencies": {
+    "axios": "0.21.1",
+    "phoenix": "1.6.0"
+  }
+}
