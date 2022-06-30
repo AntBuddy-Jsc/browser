@@ -121,6 +121,8 @@ export class AntBuddy {
       })
     );
 
+    this.joinConversationLobbyChannel(customerId);
+
     if (this.config.onSetCustomerId) {
       this.logger.debug('Invoking onSetCustomerId:', customerId);
       this.config.onSetCustomerId(customerId);
@@ -229,6 +231,37 @@ export class AntBuddy {
     return this;
   };
 
+  joinConversationLobbyChannel = (fallbackCustomerId?: string | null) => {
+    const customerId = this.customerId || fallbackCustomerId;
+    const channel = this.socket.channel(`conversation:lobby:${customerId}`, {});
+
+    channel.on('conversation:updated', (data: any) => {
+      if (data?.updates?.status === 'closed' && !data?.updates?.rate) {
+        const newMessages = this.getRatingMessage();
+        this.setMessages([...this.messages, ...newMessages]);
+      }
+    });
+
+    this.logger.debug('Joining channel customer:', customerId);
+
+    channel
+      .join()
+      .receive('ok', (res: any) => {
+        this.logger.debug('Joined conversation successfully!', res);
+      })
+      .receive('error', (err: any) => {
+        this.logger.debug('Unable to join conversation!', err);
+      });
+
+    return this;
+  };
+
+  rateConversation = async (rate: number) => {
+    this.channel?.push('conversation:rate', {
+      rate,
+    });
+  };
+
   createNewConversation = async (customerId: string) => {
     const {accountId, inboxId, baseUrl} = this.config;
     const params = {
@@ -242,10 +275,18 @@ export class AntBuddy {
 
   initializeNewConversation = async (
     existingCustomerId?: string | null,
-    email?: string
+    email?: string,
+    name?: string,
+    phone?: string
   ) => {
     const {customer = {}} = this.config;
-    const metadata = email ? {...customer, email} : customer;
+    const metadata = {
+      ...customer,
+      ...(email && {email}),
+      ...(name && {name}),
+      ...(phone && {phone}),
+    };
+
     const customerId = await this.createOrUpdateCustomer(
       existingCustomerId,
       metadata
@@ -358,8 +399,9 @@ export class AntBuddy {
       ...filters,
     };
 
-    const {customer_id: matchingCustomerId} =
-      await API.findCustomerByExternalId(query, baseUrl);
+    const {
+      customer_id: matchingCustomerId,
+    } = await API.findCustomerByExternalId(query, baseUrl);
 
     return matchingCustomerId;
   };
@@ -460,7 +502,12 @@ export class AntBuddy {
     this.setMessages(messages);
   };
 
-  sendNewMessage = async (message: Partial<Message>, email?: string) => {
+  sendNewMessage = async (
+    message: Partial<Message>,
+    email?: string,
+    name?: string,
+    phone?: string
+  ) => {
     const {customerId, conversationId} = this;
     const {body = '', file_ids = []} = message;
     const isMissingBody = !body || body.trim().length === 0;
@@ -489,7 +536,7 @@ export class AntBuddy {
     if (!customerId || !conversationId) {
       // TODO: this feels a bit hacky...
       // Can/should we just create the message within this call?
-      await this.initializeNewConversation(customerId, email);
+      await this.initializeNewConversation(customerId, email, name, phone);
     }
 
     this.channel?.push('shout', {
@@ -572,8 +619,8 @@ export class AntBuddy {
     }
 
     const hasAwayMessage = awayMessage && awayMessage.length > 0;
-    const isOutsideWorkingHours =
-      !!this.settings?.account?.is_outside_working_hours;
+    const isOutsideWorkingHours = !!this.settings?.account
+      ?.is_outside_working_hours;
     const shouldDisplayAwayMessage = hasAwayMessage && isOutsideWorkingHours;
 
     return [
@@ -581,6 +628,19 @@ export class AntBuddy {
         type: 'bot',
         customer_id: 'bot',
         body: shouldDisplayAwayMessage ? awayMessage : greeting,
+        created_at: new Date().toISOString(), // TODO: what should this be?
+        ...overrides,
+      },
+    ];
+  };
+
+  getRatingMessage = (overrides = {}): Array<Message> => {
+    return [
+      {
+        type: 'bot',
+        customer_id: 'bot',
+        subtype: 'rating',
+        body: 'Đánh giá cuộc hội thoại',
         created_at: new Date().toISOString(), // TODO: what should this be?
         ...overrides,
       },
