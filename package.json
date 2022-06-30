@@ -1,6 +1,6 @@
 {
   "name": "@antbuddy-jsc/browser",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "AntBuddy Chat browser library",
   "repository": {
     "type": "git",
